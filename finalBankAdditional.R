@@ -14,20 +14,17 @@ library(caTools)
 #Importing the dataset
 dataset <- read.csv('bank-additional-full.csv')
 
-
 #Initial look at the data
 names(dataset)
 summary(dataset)
 str(dataset)
-
 
 #DATA CLEANING
 #Checking for the missing values
 sum(is.na(dataset)) 
 sapply(dataset, FUN=function(x) sum(is.na(x)))  
 
-#dataset - no missing value
-
+#dataset - no missing value found
 
 #Generating plots to visually get some insights about the variables
 
