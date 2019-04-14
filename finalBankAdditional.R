@@ -7,6 +7,8 @@ library(caret)
 library(randomForest)
 library(xgboost)
 library(VIM)
+library("rpart")
+library("rpart.plot")
 library(C50)
 library(car)
 library(caTools)
@@ -14,12 +16,18 @@ library(caTools)
 #Importing the dataset
 dataset <- read.csv('bank-additional-full.csv')
 
+
+
 #Initial look at the data
 names(dataset)
 summary(dataset)
+dim(dataset)
 str(dataset)
 
-#DATA CLEANING
+########################################################################################################
+####################################  Data Exploring  ##################################################
+########################################################################################################
+# Data Cleaning
 #Checking for the missing values
 sum(is.na(dataset)) 
 sapply(dataset, FUN=function(x) sum(is.na(x)))  
@@ -59,6 +67,7 @@ p2 <- ggplot(dataset, aes(x = y, y =age)) +
   theme(plot.title = element_text(hjust = 0.5))
 
 p2
+
 
 #Marital Vairable
 p3 <- ggplot() + geom_bar(aes(y = (..count..), x = marital, fill = y), data = dataset,
@@ -257,7 +266,11 @@ p23 <- ggplot() + geom_histogram(aes( x = nr.employed, fill = y), data = dataset
   theme(plot.title = element_text(hjust = 0.5))
 p23
 
-#FEATURE ENGINEERING
+########################################################################################################
+####################################  Feature Engineering ##############################################
+########################################################################################################
+
+
 
 #Feature Binning - Age Variable
 dataset$age <- cut(dataset$age, c(0,19,35,60,100), labels = c("Teens","Young Adults", "Adults", "Senior Citizens"))
@@ -351,17 +364,18 @@ vif_func(in_frame=bank_cor,thresh=10,trace=T) #Result - 'euribor3m'
 dataset <- subset(dataset, select = -c(euribor3m))
 
 
-#PRE-PROCESSING:
+########################################################################################################
+####################################  Data Pre-processing ##############################################
+########################################################################################################
+
 
 #datasetRan <- dataset[order(runif(nrow(dataset))),]
 
 #Splitting the dataseting data into train and validation set
-
+set.seed(123)
 i = sample.split(dataset$y, SplitRatio = 0.8)
 new_train_pre = subset(dataset, i ==TRUE)
 new_test = subset(dataset, i ==FALSE)
-
-
 
 #Dealing with Imbalanced Data
 #Synthetic Data generation method is used to balance the classes
@@ -378,11 +392,33 @@ prop.table(table(new_train$y)) #No-55%, Yes-45%
 prop.table(table(dataset$y)) # No-89%, Yes-11%
 prop.table(table(train_smote$y)) #No-55%, Yes-45%
 
+########################################################################################################
+####################################  Data Modeling  ###################################################
+########################################################################################################
 
-#MODELLING - VARIOUS ALGORITHMS are USED BELOW
-set.seed(123)
 
-#1 - C5.0 Decision Tree
+#1 - rpart Decision Tree
+
+#Model Execution
+
+
+treeAnalysis=rpart(y~ . - duration, data=new_train)
+treeAnalysis=rpart(y~ .,data=new_train)
+treeAnalysis
+rpart.plot(treeAnalysis, extra = 4)
+summary(treeAnalysis)
+
+
+#Prediction
+pred_TA<- predict(treeAnalysis,new_test, type="class")
+
+#Confusion Matrix
+confusion_TA <- confusionMatrix(data= pred_TA,reference = new_test$y)
+confusion_TA
+
+
+
+#2 - C5.0 Decision Tree
 
 #Model Execution
 
@@ -415,7 +451,7 @@ confusion_improved
 
 
 
-#2 - Random Forest
+#3 - Random Forest
 
 #Model Execution
 rf_model<-randomForest(y ~.,data = new_train, importance=TRUE, ntree=100)
@@ -438,7 +474,7 @@ confusion_rf
 
 
 
-#3 - eXtreme Gradient Boosting (XGBoost)
+#4 - eXtreme Gradient Boosting (XGBoost)
 
 #Using one hot encoding 
 labels <- new_train['y'] 
