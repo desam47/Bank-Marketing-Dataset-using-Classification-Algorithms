@@ -267,7 +267,7 @@ p23 <- ggplot() + geom_histogram(aes( x = nr.employed, fill = y), data = dataset
 p23
 
 ########################################################################################################
-####################################  Feature Engineering ##############################################
+####################################  Pre-Processing ###################################################
 ########################################################################################################
 
 
@@ -363,11 +363,8 @@ vif_func(in_frame=bank_cor,thresh=10,trace=T) #Result - 'euribor3m'
 #From the above 2 metrics- it is decided to remove the 'euribor3m' variable
 dataset <- subset(dataset, select = -c(euribor3m))
 
-
-########################################################################################################
-####################################  Data Pre-processing ##############################################
-########################################################################################################
-
+#From the dataset description: duration to avoide
+dataset <- subset(dataset, select = -c(duration))
 
 #datasetRan <- dataset[order(runif(nrow(dataset))),]
 
@@ -402,15 +399,22 @@ prop.table(table(train_smote$y)) #No-55%, Yes-45%
 #Model Execution
 
 
-treeAnalysis=rpart(y~ . - duration, data=new_train)
+#treeAnalysis=rpart(y~ . - duration, data=new_train)
+
 treeAnalysis=rpart(y~ .,data=new_train)
 treeAnalysis
+
+png("test.png", units="in", width=5, height=5, res=300)
 rpart.plot(treeAnalysis, extra = 4)
+dev.off()
+
+
 summary(treeAnalysis)
 
 
 #Prediction
 pred_TA<- predict(treeAnalysis,new_test, type="class")
+table(pred_TA)
 
 #Confusion Matrix
 confusion_TA <- confusionMatrix(data= pred_TA,reference = new_test$y)
@@ -423,6 +427,7 @@ confusion_TA
 #Model Execution
 
 C50_model <- C5.0(y ~.,data = new_train)
+C50_model <- C5.0(y~ . - duration, data=new_train)
 
 #Summary Statistics
 summary(C50_model)
@@ -430,6 +435,7 @@ summary(C50_model)
 
 #C5.0 Prediction
 pred_C50<- predict(C50_model,new_test, type="class")
+table(pred_C50)
 
 #Confusion Matrix
 confusion_C50 <- confusionMatrix(data= pred_C50,reference = new_test$y)
@@ -443,6 +449,8 @@ summary(C50_model_imp)
 
 #C5.0 improved Predict
 predict_C50_imp <-predict(C50_model_imp,new_test, method = "class")
+table(predict_C50_imp)
+
 
 #Confusion Matrix
 
@@ -466,6 +474,8 @@ varImpPlot(rf_model)
 
 #Prediction
 pred_rf<- predict(rf_model,new_test, type="response")
+table(pred_rf)
+
 #pred_rf <- pred_rf[,2]
 
 #Confusion Matrix
@@ -522,6 +532,8 @@ pred.resp <- ifelse(p > 0.55,'yes','no')
 new_test$y<- recode(new_test$y,"1='yes'; 0='no'")
 
 pred.resp<- factor(pred.resp)
+
+table(pred.resp)
 
 # confusion matrix
 
